@@ -22,6 +22,8 @@ app.use(
   })
 );
 
+app.options("*", cors());
+
 
 const userRouter= require('./routes/user.routes')
 const indexRouter= require('./routes/index.routes')
