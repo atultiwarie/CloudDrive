@@ -22,7 +22,7 @@ const Home = () => {
   const [loading, setLoading] = useState({
     upload: false,
     logout: false,
-    fileLoading: {}, // File-specific loading
+    fileLoading: {},
   });
 
   const navigate = useNavigate();

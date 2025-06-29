@@ -1,6 +1,7 @@
-const BASE_URL = "https://clouddrive-asj3.onrender.com";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export default BASE_URL;
+
 
 export const registerUser = async (form) => {
   const res = await fetch(`${BASE_URL}/user/register`, {
