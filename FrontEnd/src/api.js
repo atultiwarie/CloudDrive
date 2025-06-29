@@ -34,12 +34,23 @@ export const uploadFile = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${BASE_URL}/upload-file`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${BASE_URL}/upload-file`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Error ${res.status}: ${errorText}`);
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error("File upload failed:", error.message);
+    return { error: error.message };
+  }
 };
 
 export const fetchFiles = async () => {
