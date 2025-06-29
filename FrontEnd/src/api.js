@@ -1,5 +1,5 @@
-// const BASE_URL = "https://clouddrive-ed56.onrender.com";
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "https://clouddrive-asj3.onrender.com";
+
 export default BASE_URL;
 
 export const registerUser = async (form) => {

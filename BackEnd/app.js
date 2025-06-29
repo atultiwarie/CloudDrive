@@ -15,22 +15,12 @@ connectToDB();
 
 const cors = require("cors");
 
-// app.use(
-//   cors({
-//     origin: "https://cloud-drive-rho.vercel.app",
-//     credentials: true,
-//   })
-// );
-
 app.use(
   cors({
-    origin: ["http://localhost:5173"], // Frontend dev server
+    origin: "https://cloud-drive-tau.vercel.app/",
     credentials: true,
   })
 );
-
-
-
 
 
 const userRouter= require('./routes/user.routes')
