@@ -17,7 +17,7 @@ const cors = require("cors");
 
 app.use(
   cors({
-    origin: "https://cloud-drive-tau.vercel.app/",
+    origin: "https://cloud-drive-tau.vercel.app",
     credentials: true,
   })
 );
