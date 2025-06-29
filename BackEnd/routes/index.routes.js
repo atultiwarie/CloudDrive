@@ -19,6 +19,8 @@ router.get("/home", authMiddleware, async (req, res) => {
   }
 });
 
+const streamifier = require("streamifier");
+
 router.post(
   "/upload-file",
   authMiddleware,
@@ -29,14 +31,25 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      const streamUpload = (req) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { resource_type: "auto" },
+            (error, result) => {
+              if (result) {
+                resolve(result);
+              } else {
+                reject(error);
+              }
+            }
+          );
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+
+      const result = await streamUpload(req);
+
      
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        resource_type: "auto",
-      });
-
-      fs.unlinkSync(req.file.path);
-
-      
       const fileDoc = await fileModel.create({
         path: result.secure_url,
         public_id: result.public_id,
@@ -56,6 +69,7 @@ router.post(
     }
   }
 );
+
 
 router.get("/download/:id", authMiddleware, async (req, res) => {
   try {
