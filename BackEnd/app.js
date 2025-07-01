@@ -15,24 +15,18 @@ connectToDB();
 
 const cors = require("cors");
 
-const allowedOrigins = [
-  "https://cloud-drive-tau.vercel.app", 
-  "https://cloud-drive-git-main-atul-tiw.vercel.app" 
-];
+app.use(
+  cors({
+    origin: [
+      "https://cloud-drive-tau.vercel.app",
+      "https://cloud-drive-git-main-atul-tiw.vercel.app"
+    ],
+    credentials: true,
+  })
+);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS policy violation: Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-};
+app.options("*", cors());
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 
 
