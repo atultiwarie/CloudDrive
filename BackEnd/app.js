@@ -19,7 +19,8 @@ app.use(
   cors({
     origin: [
       "https://cloud-drive-tau.vercel.app",
-      "https://cloud-drive-git-main-atul-tiw.vercel.app"
+      "https://cloud-drive-git-main-atul-tiw.vercel.app",
+      "https://cloud-drive.atultiwari.me" 
     ],
     credentials: true,
   })
