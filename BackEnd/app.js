@@ -45,6 +45,14 @@ app.use(cookieParser())
 app.use('/',indexRouter)
 app.use('/user',userRouter)
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "CloudDrive BackEnd",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.listen(PORT ,()=>{
     console.log(`Server is running on http://localhost:${PORT}/user`)
 })
