@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+button{
+    cursor: pointer;
+    outline: none;
+}
+
+button:active{
+    transform: translateY(2px);
+}

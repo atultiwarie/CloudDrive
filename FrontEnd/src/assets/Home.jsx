@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { uploadFile, fetchFiles, deleteFile, logoutUser } from "../api";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import BASE_URL from "../api";
-
-const Alert = React.forwardRef(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
+import Banner from "../components/Banner";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const Home = () => {
   const [file, setFile] = useState(null);
@@ -19,6 +15,12 @@ const Home = () => {
     message: "",
     severity: "success",
   });
+  const [filesLoading, setFilesLoading] = useState(true);
+  const [confirmation, setConfirmation] = useState({
+    open: false,
+    action: null,
+    fileId: null,
+  });
   const [loading, setLoading] = useState({
     upload: false,
     logout: false,
@@ -28,8 +30,15 @@ const Home = () => {
   const navigate = useNavigate();
 
   const getFiles = async () => {
-    const data = await fetchFiles();
-    setFiles(data.files);
+    setFilesLoading(true);
+    try {
+      const data = await fetchFiles();
+      setFiles(data.files || []);
+    } catch (error) {
+      showSnackbar(error.message || "Could not load files", "error");
+    } finally {
+      setFilesLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -48,17 +57,19 @@ const Home = () => {
     e.preventDefault();
     if (!file) return showSnackbar("Please select a file", "error");
 
-    setLoading({ ...loading, upload: true });
-    const data = await uploadFile(file);
-    setLoading({ ...loading, upload: false });
-
-    if (data.file) {
-      showSnackbar("File uploaded successfully");
-      getFiles();
-      setShowPopup(false);
-      setFile(null);
-    } else {
-      showSnackbar(data.error || "Upload failed", "error");
+    setLoading((prev) => ({ ...prev, upload: true }));
+    try {
+      const data = await uploadFile(file);
+      if (data.file) {
+        showSnackbar("File uploaded successfully");
+        getFiles();
+        setShowPopup(false);
+        setFile(null);
+      } else {
+        showSnackbar(data.error || "Upload failed", "error");
+      }
+    } finally {
+      setLoading((prev) => ({ ...prev, upload: false }));
     }
   };
 
@@ -68,19 +79,26 @@ const Home = () => {
       fileLoading: { ...prev.fileLoading, [fileId]: { delete: true } },
     }));
 
-    const data = await deleteFile(fileId);
-
-    setLoading((prev) => ({
-      ...prev,
-      fileLoading: { ...prev.fileLoading, [fileId]: { delete: false } },
-    }));
-
-    if (data.message === "File deleted successfully") {
-      showSnackbar("File deleted successfully");
-      getFiles();
-    } else {
-      showSnackbar("Delete failed", "error");
+    try {
+      const data = await deleteFile(fileId);
+      if (data.message === "File deleted successfully") {
+        showSnackbar("File deleted successfully");
+        getFiles();
+      } else {
+        showSnackbar("Delete failed", "error");
+      }
+    } catch (error) {
+      showSnackbar(error.message || "Delete failed", "error");
+    } finally {
+      setLoading((prev) => ({
+        ...prev,
+        fileLoading: { ...prev.fileLoading, [fileId]: { delete: false } },
+      }));
     }
+  };
+
+  const requestDelete = (fileId) => {
+    setConfirmation({ open: true, action: "delete", fileId });
   };
 
   const handleDownload = (fileId) => {
@@ -101,12 +119,28 @@ const Home = () => {
   };
 
   const handleLogout = async () => {
-    setLoading({ ...loading, logout: true });
-    await logoutUser();
-    localStorage.removeItem("isAuthenticated");
-    setLoading({ ...loading, logout: false });
-    showSnackbar("Logged out successfully");
-    navigate("/");
+    setLoading((prev) => ({ ...prev, logout: true }));
+    try {
+      await logoutUser();
+      localStorage.removeItem("isAuthenticated");
+      showSnackbar("Logged out successfully");
+      navigate("/");
+    } catch (error) {
+      showSnackbar(error.message || "Logout failed", "error");
+    } finally {
+      setLoading((prev) => ({ ...prev, logout: false }));
+    }
+  };
+
+  const requestLogout = () => {
+    setConfirmation({ open: true, action: "logout", fileId: null });
+  };
+
+  const confirmAction = () => {
+    const { action, fileId } = confirmation;
+    setConfirmation({ open: false, action: null, fileId: null });
+    if (action === "delete") handleDelete(fileId);
+    if (action === "logout") handleLogout();
   };
 
   const handleCancelUpload = () => {
@@ -131,7 +165,7 @@ const Home = () => {
         </button>
 
         <button
-          onClick={handleLogout}
+          onClick={requestLogout}
           className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
           disabled={loading.logout}
         >
@@ -216,7 +250,9 @@ const Home = () => {
       )}
 
       <div className="files flex flex-wrap gap-4 mt-3 justify-center">
-        {files.length === 0 ? (
+        {filesLoading ? (
+          <CircularProgress size={40} color="inherit" />
+        ) : files.length === 0 ? (
           <p className="text-white">No files found.</p>
         ) : (
           files.map((file) => (
@@ -244,7 +280,7 @@ const Home = () => {
                   Download
                 </button>
                 <button
-                  onClick={() => handleDelete(file._id)}
+                  onClick={() => requestDelete(file._id)}
                   className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-4 rounded flex items-center gap-2"
                   disabled={loading.fileLoading[file._id]?.delete}
                 >
@@ -259,20 +295,34 @@ const Home = () => {
         )}
       </div>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
+      <div className="fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2">
+        <Banner
+          message={snackbar.open ? snackbar.message : ""}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          onClose={handleSnackbarClose}
+        />
+      </div>
+
+      <ConfirmDialog
+        open={confirmation.open}
+        title={
+          confirmation.action === "logout"
+            ? "Are you sure you want to log out?"
+            : "Are you sure you want to delete this file?"
+        }
+        message={
+          confirmation.action === "logout"
+            ? "You will need to sign in again to access your files."
+            : "This file will be permanently removed from your drive."
+        }
+        confirmLabel={
+          confirmation.action === "logout" ? "Log out" : "Delete file"
+        }
+        onCancel={() =>
+          setConfirmation({ open: false, action: null, fileId: null })
+        }
+        onConfirm={confirmAction}
+      />
     </main>
   );
 };

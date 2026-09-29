@@ -20,7 +20,8 @@ app.use(
     origin: [
       "https://cloud-drive-tau.vercel.app",
       "https://cloud-drive-git-main-atul-tiw.vercel.app",
-      "https://cloud-drive.atultiwari.me" 
+      "https://cloud-drive.atultiwari.me" ,
+      "http://localhost:5174",
     ],
     credentials: true,
   })
@@ -54,5 +55,5 @@ app.get("/api/health", (req, res) => {
 });
 
 app.listen(PORT ,()=>{
-    console.log(`Server is running on http://localhost:${PORT}/user`)
+    console.log(`Server is running on http://localhost:${PORT}`)
 })
