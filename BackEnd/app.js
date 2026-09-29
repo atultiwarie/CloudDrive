@@ -22,6 +22,7 @@ app.use(
       "https://cloud-drive-git-main-atul-tiw.vercel.app",
       "https://cloud-drive.atultiwari.me" ,
       "http://localhost:5174",
+      "http://localhost:5173",
     ],
     credentials: true,
   })
