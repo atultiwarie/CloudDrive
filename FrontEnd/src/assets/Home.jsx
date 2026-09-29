@@ -8,6 +8,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 
 const Home = () => {
   const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   const [files, setFiles] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -49,6 +50,12 @@ const Home = () => {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (filePreview) URL.revokeObjectURL(filePreview);
+    };
+  }, [filePreview]);
+
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
   };
@@ -62,9 +69,10 @@ const Home = () => {
       const data = await uploadFile(file);
       if (data.file) {
         showSnackbar("File uploaded successfully");
-        getFiles();
+        setFiles((prev) => [data.file, ...prev]);
         setShowPopup(false);
         setFile(null);
+        setFilePreview(null);
       } else {
         showSnackbar(data.error || "Upload failed", "error");
       }
@@ -83,7 +91,7 @@ const Home = () => {
       const data = await deleteFile(fileId);
       if (data.message === "File deleted successfully") {
         showSnackbar("File deleted successfully");
-        getFiles();
+        setFiles((prev) => prev.filter((item) => item._id !== fileId));
       } else {
         showSnackbar("Delete failed", "error");
       }
@@ -145,7 +153,20 @@ const Home = () => {
 
   const handleCancelUpload = () => {
     setFile(null);
+    setFilePreview(null);
     setShowPopup(false);
+  };
+
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (!selectedFile) return;
+
+    setFile(selectedFile);
+    setFilePreview(
+      selectedFile.type.startsWith("image/")
+        ? URL.createObjectURL(selectedFile)
+        : null
+    );
   };
 
   const handleSnackbarClose = () => {
@@ -201,19 +222,34 @@ const Home = () => {
                       d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
                     />
                   </svg>
-                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">Click to upload</span> or
-                    drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    SVG, PNG, JPG or GIF (MAX. 800x400px)
-                  </p>
+                  {filePreview ? (
+                    <img
+                      src={filePreview}
+                      alt="Selected file preview"
+                      className="max-h-40 max-w-full object-contain"
+                    />
+                  ) : (
+                    <>
+                      <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="font-semibold">Click to upload</span> or
+                        drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        SVG, PNG, JPG or GIF (MAX. 800x400px)
+                      </p>
+                    </>
+                  )}
+                  {file && (
+                    <p className="mt-2 max-w-full truncate px-4 text-sm text-gray-500 dark:text-gray-400">
+                      {file.name}
+                    </p>
+                  )}
                 </div>
                 <input
                   id="dropzone-file"
                   type="file"
                   className="hidden"
-                  onChange={(e) => setFile(e.target.files[0])}
+                  onChange={handleFileChange}
                 />
               </label>
             </div>
@@ -260,11 +296,17 @@ const Home = () => {
               key={file._id}
               className="w-96 h-96 bg-gray-300 rounded-md overflow-hidden shadow-lg flex flex-col justify-between"
             >
-              <img
-                src={file.path}
-                alt={file.originalname}
-                className="w-full h-64 object-contain mb-4 rounded bg-gray-200"
-              />
+              {file.resource_type === "image" ? (
+                <img
+                  src={file.path}
+                  alt={file.originalname}
+                  className="w-full h-64 object-contain mb-4 rounded bg-gray-200"
+                />
+              ) : (
+                <div className="w-full h-64 mb-4 rounded bg-gray-200 flex items-center justify-center text-gray-700">
+                  Preview unavailable for this file type
+                </div>
+              )}
               <h1 className="truncate w-full text-center px-2 mb-2">
                 {file.originalname}
               </h1>
